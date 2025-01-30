@@ -227,7 +227,6 @@ cpdef start_search(seq,seq_rc,seqname,minlen,maxlen,strand,starts,stops,table,in
     
     #get seq results
     if dna or pep or rna:
-        print(table)
         seqresults=orfs_to_seq(orfs_as_struct,seq,seq_rc,seqname,seq_len,include_stop,[dna,rna,pep],table)
     
        

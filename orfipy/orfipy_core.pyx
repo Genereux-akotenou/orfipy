@@ -25,7 +25,7 @@ cdef struct ORF:
     int length
     
     
-cpdef orfs(seq,name='Seq',minlen=0,maxlen=1000000,strand='b',starts=['TTG','CTG','ATG'],stops=['TAA','TAG','TGA'],include_stop=False,partial3=False,partial5=False,between_stops=False):
+cpdef orfs(seq,name='Seq',minlen=0,maxlen=1000000,strand='b',starts=['TTG','CTG','ATG'],stops=['TAA','TAG','TGA'],include_stop=False,partial3=False,partial5=False,between_stops=False,nested=False):
     """
     API to use orfipy in python
     returns a list of  tuple (orf start (0 based), stop (1 based), strand, description)
@@ -38,7 +38,7 @@ cpdef orfs(seq,name='Seq',minlen=0,maxlen=1000000,strand='b',starts=['TTG','CTG'
 
     """
     seq_rc=revcomp(seq)
-    result=start_search(seq,seq_rc,name,minlen,maxlen,strand,starts,stops,None,include_stop,partial3,partial5,between_stops,[False,True,False,False,False])
+    result=start_search(seq,seq_rc,name,minlen,maxlen,strand,starts,stops,None,include_stop,partial3,partial5,between_stops,nested,[False,True,False,False,False])
     bed=result[1].split('\n')
     final_result=[]
     
@@ -56,7 +56,7 @@ cpdef orfs(seq,name='Seq',minlen=0,maxlen=1000000,strand='b',starts=['TTG','CTG'
     return final_result
         
 
-cpdef start_search(seq,seq_rc,seqname,minlen,maxlen,strand,starts,stops,table,include_stop,partial3,partial5,find_between_stops,out_opts):
+cpdef start_search(seq,seq_rc,seqname,minlen,maxlen,strand,starts,stops,table,include_stop,partial3,partial5,find_between_stops,nested,out_opts):
     """
     Start ORF search
 
@@ -177,7 +177,8 @@ cpdef start_search(seq,seq_rc,seqname,minlen,maxlen,strand,starts,stops,table,in
              maxlen,
              partial3, 
              partial5,
-             find_between_stops))
+             find_between_stops,
+             nested))
         
         
     if search_rev:
@@ -208,6 +209,7 @@ cpdef start_search(seq,seq_rc,seqname,minlen,maxlen,strand,starts,stops,table,in
              partial3, 
              partial5,
              find_between_stops,
+             nested,
              True))
     
            
@@ -245,6 +247,7 @@ cdef list get_orfsc(list start_positions,
              bint partial3=False, 
              bint partial5=False,
              bint find_between_stops=False,
+             bint nested=False,
              bint rev_com=False):
     """
     Search ORFs given list of start and stop positions
@@ -316,8 +319,11 @@ cdef list get_orfsc(list start_positions,
         starts_by_frame=[[],[],[]]
         for start in start_positions:
             starts_by_frame[start%3].append(start)
-            
-        start_stop_pairs=list(map(find_between_start_stop_v,starts_by_frame,stops_by_frame))
+        
+        if not nested:
+            start_stop_pairs=list(map(find_between_start_stop_v,starts_by_frame,stops_by_frame))
+        else:
+            start_stop_pairs=list(map(find_between_start_stop_with_overlap_v,starts_by_frame,stops_by_frame))
         
         
     #format results
@@ -419,7 +425,6 @@ cpdef list find_between_start_stop_v(start_positions,  list stop_positions):
     start_positions=deque(start_positions)
     #print('S',start_positions)
     #print('T',stop_positions)
-
     
     #first stop pos is -1,-2 or -3 ignore
     for i in range(1,total_stops):
@@ -460,8 +465,124 @@ cpdef list find_between_start_stop_v(start_positions,  list stop_positions):
     
     return result
     
-    
+cpdef list find_between_start_stop_with_overlap_v(start_positions,  list stop_positions):
+    """
+    Find ORFs defined as between start and stops from a list of start and stop coordinates
 
+    returns a list of tuples. each tuple is (upstream_stop,current_stop,otype)
+    upstream_stop: position of start codon
+    current_stop: stop position in the ORF
+    otype: ORF type complete, 5 prime or 3 prime
+    """
+    #result will contain pairs of ORFs [start,stop]
+    cdef list result=[]
+    cdef int upstream_stop
+    cdef int this_start
+    cdef bint start_found=False
+    cdef int otype=0
+    cdef int total_stops=len(stop_positions)
+    cdef int i=0
+    
+    #convert to dequeue for faster pop operation
+    start_positions=deque(start_positions)
+    #print('S',start_positions)
+    #print('T',stop_positions)
+    print("---")
+    
+    #first stop pos is -1,-2 or -3 ignore
+    print("start", start_positions)
+    print("stop", stop_positions)
+    for i in range(1,total_stops):
+        upstream_stop=stop_positions[i-1]
+        current_stop=stop_positions[i]
+        #if this stop is upstream of next available start
+        start_found=False
+        while start_positions:
+            if current_stop <= start_positions[0]:
+                break
+            this_start = start_positions.popleft()
+            
+            print(this_start, upstream_stop)
+            if  this_start >= upstream_stop:
+                #found a start for current_stop_position
+                #print('fount',upstream_stop,this_start,current_stop)
+                #update upstream stop as start
+                upstream_stop=this_start-3
+                #last_start=this_start
+                #this is complete orf
+                start_found=True
+                #print('Found strt',otype,start_found)
+                #break
+
+            print(upstream_stop, start_found)
+            
+            #other wise is stop is in seq but no start otype is 5'partial else complete
+            #0 complete; 1: 5 partial; 2: 3 partial; 3: no start no stop
+            if (not start_found) and i==total_stops-1: #no start no stop
+                #otype=3
+                continue
+            elif start_found and i==total_stops-1:
+            #start but no stop
+                otype=2
+            elif not start_found:
+                otype=1
+            else:
+                otype=0
+            #upstream_stop is start codon position
+            print((upstream_stop,current_stop,otype))
+            result.append((upstream_stop,current_stop,otype))
+    
+    return result
+
+# cpdef list find_between_start_stop_with_overlap_v(start_positions, list stop_positions):
+#     """
+#     Find ORFs defined as between start and stops, allowing overlapping ORFs.
+
+#     Returns a list of tuples. Each tuple is:
+#     (upstream_stop, current_stop, otype)
+#     - upstream_stop: position of start codon
+#     - current_stop: stop position in the ORF
+#     - otype: ORF type (0=complete, 1=5' partial, 2=3' partial)
+#     """
+#     # Result will contain pairs of ORFs [start, stop]
+#     cdef list result = []
+#     cdef int upstream_stop
+#     cdef int this_start
+#     cdef int current_stop
+#     cdef int otype
+#     cdef int total_stops = len(stop_positions)
+#     cdef int i, j
+    
+#     # Convert to deque for faster operations
+#     start_positions = deque(start_positions)
+
+#     # Allow all start codons to be reused for overlapping ORFs
+#     for i in range(total_stops):
+#         current_stop = stop_positions[i]
+#         start_found = False
+
+#         # Iterate through available start codons
+#         for j in range(len(start_positions)):
+#             #this_start = start_positions[j]
+#             this_start = start_positions.popleft()
+
+#             if this_start >= current_stop:
+#                 break  # Stop codons must be downstream of start codons
+            
+#             # ORF type assignment
+#             if i == total_stops - 1:  # Last stop codon, may be 3' partial
+#                 otype = 2
+#             else:
+#                 otype = 0  # Complete ORF
+                
+#             result.append((this_start - 3, current_stop, otype))
+#             start_found = True
+
+#         # If no valid start was found before this stop, mark it as 5' partial
+#         if not start_found:
+#             result.append((-3, current_stop, 1))  # No start codon found
+
+#     return result
 
 cdef str format_fasta(seq):
     """

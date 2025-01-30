@@ -130,6 +130,7 @@ def start_multiprocs(seqs,
                      bw_stops,
                      ignore_case,
                      file_streams,
+                     nested,
                      tmpdir):
     """
     
@@ -224,7 +225,7 @@ def start_multiprocs(seqs,
         cummulative_read_bytes+=this_read
         
         #add to poolargs; if limit is reached this will be reset
-        poolargs.append([thisseq,thisseq_rc,thisname,minlen,maxlen,strand,starts,stops, table, include_stop, partial3, partial5, bw_stops, outputs,tmpdir])
+        poolargs.append([thisseq,thisseq_rc,thisname,minlen,maxlen,strand,starts,stops, table, include_stop, partial3, partial5, bw_stops, outputs, nested, tmpdir])
         
         """
         If a long sequence is read e.g. chromosome
@@ -291,7 +292,7 @@ def start_multiprocs(seqs,
     print()
     
 
-def worker_single(seqs,minlen,maxlen,strand,starts,stops,table,include_stop,partial3,partial5,bw_stops,ignore_case,file_streams,tmp):
+def worker_single(seqs,minlen,maxlen,strand,starts,stops,table,include_stop,partial3,partial5,bw_stops,ignore_case,file_streams,nested,tmp):
     """
     Compute ORFs using single thread
 
@@ -355,7 +356,7 @@ def worker_single(seqs,minlen,maxlen,strand,starts,stops,table,include_stop,part
         if strand == 'b' or strand =='r':
             thisseq_rc=revcomp(thisseq)
         
-        res=oc.start_search(thisseq,thisseq_rc,thisname,minlen,maxlen,strand,starts,stops,table, include_stop, partial3, partial5, bw_stops,outputs)
+        res=oc.start_search(thisseq,thisseq_rc,thisname,minlen,maxlen,strand,starts,stops,table, include_stop, partial3, partial5, bw_stops,nested,outputs)
         
         write_results_single(res, file_streams)
 
@@ -623,6 +624,7 @@ def main(infasta,
          dna,
          rna,
          pep,
+         nested,
          outdir,
          logr):
     """
@@ -710,6 +712,7 @@ def main(infasta,
                       bw_stops,
                       ignore_case,
                       file_streams,
+                      nested,
                       outdir)
         duration = time.time() - start
     else:
@@ -728,6 +731,7 @@ def main(infasta,
                          bw_stops,
                          ignore_case,
                          file_streams,
+                         nested,
                          outdir)
         duration = time.time() - start
              

@@ -17,7 +17,7 @@ import logging
 from orfipy import _max_mem
 from orfipy import _max_procs
 
-
+print('---')
 
 
 def validate_codons(starts,stops):
@@ -123,6 +123,7 @@ def get_command_for_log(infasta,
          dna,
          rna,
          pep,
+         nested, # add this for overlapping orfs
          outdir):
     """
     return command as string for log
@@ -155,6 +156,8 @@ def get_command_for_log(infasta,
         cmd+=" --rna "+rna
     if pep:
         cmd+=" --pep "+pep
+    if nested:
+        cmd+=" --nested "+nested
     cmd+=" --outdir "+outdir
     #print(cmd)
     return cmd
@@ -187,7 +190,7 @@ def main():
     parser.add_argument("--max", help="Maximum length of ORF, excluding stop codon (nucleotide)\nDefault: 1,000,000,000",default=1000000000)
     parser.add_argument("--strand", help="Strands to find ORFs [(f)orward,(r)everse,(b)oth]\nDefault: b",default='b',choices=['f', 'r', 'b'])
     parser.add_argument("--ignore-case", help="Ignore case and find ORFs in lower case sequences too. Useful for soft-masked sequences.\nDefault: False",default=False,dest='ignore_case', action='store_true')
-    #parser.add_argument("--nested", help="Output nested and overlapping ORFs in the same frame \nDefault: False",default=False,dest='nested', action='store_true')
+    parser.add_argument("--nested", help="Output nested and overlapping ORFs in the same frame \nDefault: False",default=False,dest='nested', action='store_true')
     parser.add_argument("--partial-3", help="Output ORFs with a start codon but lacking an inframe stop codon. E.g. \"ATG TTT AAA\"\nDefault: False",default=False,dest='partial3', action='store_true')
     parser.add_argument("--partial-5", help="Output ORFs with an inframe stop codon lacking an inframe start codon. E.g. \"TTT AAA TAG\"\nDefault: False",default=False,dest='partial5', action='store_true')
     parser.add_argument("--between-stops", help="Output ORFs defined as regions between stop codons (regions free of stop codon). This will set --partial-3 and --partial-5 true.\nDefault: False",default=False,dest='bw_stops', action='store_true')
@@ -293,6 +296,7 @@ def main():
     dna=args.dna
     rna=args.rna
     pep=args.pep
+    nested=args.nested
     
     outdir=args.outdir
     if not outdir:
@@ -360,6 +364,7 @@ def main():
                          dna,
                          rna,
                          pep,
+                         nested,
                          outdir))
     
     
@@ -387,6 +392,7 @@ def main():
                          dna,
                          rna,
                          pep,
+                         nested,
                          outdir,logr)
     
     

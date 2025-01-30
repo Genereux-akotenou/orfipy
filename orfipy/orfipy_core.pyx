@@ -487,11 +487,11 @@ cpdef list find_between_start_stop_with_overlap_v(start_positions,  list stop_po
     start_positions=deque(start_positions)
     #print('S',start_positions)
     #print('T',stop_positions)
-    print("---")
+    #print("---")
     
     #first stop pos is -1,-2 or -3 ignore
-    print("start", start_positions)
-    print("stop", stop_positions)
+    #print("start", start_positions)
+    #print("stop", stop_positions)
     for i in range(1,total_stops):
         upstream_stop=stop_positions[i-1]
         current_stop=stop_positions[i]
@@ -502,7 +502,7 @@ cpdef list find_between_start_stop_with_overlap_v(start_positions,  list stop_po
                 break
             this_start = start_positions.popleft()
             
-            print(this_start, upstream_stop)
+            #print(this_start, upstream_stop)
             if  this_start >= upstream_stop:
                 #found a start for current_stop_position
                 #print('fount',upstream_stop,this_start,current_stop)
@@ -514,7 +514,7 @@ cpdef list find_between_start_stop_with_overlap_v(start_positions,  list stop_po
                 #print('Found strt',otype,start_found)
                 #break
 
-            print(upstream_stop, start_found)
+            #print(upstream_stop, start_found)
             
             #other wise is stop is in seq but no start otype is 5'partial else complete
             #0 complete; 1: 5 partial; 2: 3 partial; 3: no start no stop
@@ -529,7 +529,7 @@ cpdef list find_between_start_stop_with_overlap_v(start_positions,  list stop_po
             else:
                 otype=0
             #upstream_stop is start codon position
-            print((upstream_stop,current_stop,otype))
+            #print((upstream_stop,current_stop,otype))
             result.append((upstream_stop,current_stop,otype))
     
     return result

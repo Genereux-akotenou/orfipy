@@ -227,6 +227,7 @@ cpdef start_search(seq,seq_rc,seqname,minlen,maxlen,strand,starts,stops,table,in
     
     #get seq results
     if dna or pep or rna:
+        print(table)
         seqresults=orfs_to_seq(orfs_as_struct,seq,seq_rc,seqname,seq_len,include_stop,[dna,rna,pep],table)
     
        
@@ -605,7 +606,15 @@ cdef str format_fasta(seq):
     
 
 
-cdef list orfs_to_seq(list orfs_struct_list, str seq, str seq_rc, str seq_name, int seqlen, bint include_stop,out_types,dict table):
+# cdef list orfs_to_seq(list orfs_struct_list, str seq, str seq_rc, str seq_name, int seqlen, bint include_stop,out_types,dict table):
+cdef list orfs_to_seq(list orfs_struct_list, str seq, str seq_rc, str seq_name, int seqlen, bint include_stop,out_types,str table):
+    """
+    To fix tempraly: File "orfipy/orfipy_core.pyx", line 59, in orfipy_core.start_search
+    cpdef start_search(seq,seq_rc,seqname,minlen,maxlen,strand,starts,stops,table,include_stop,partial3,partial5,find_between_stops,nested,out_opts):
+    File "orfipy/orfipy_core.pyx", line 231, in orfipy_core.start_search
+        seqresults=orfs_to_seq(orfs_as_struct,seq,seq_rc,seqname,seq_len,include_stop,[dna,rna,pep],table)
+    TypeError: Expected dict, got str
+    """
     """
     extract seqs from list of ORFs
     """

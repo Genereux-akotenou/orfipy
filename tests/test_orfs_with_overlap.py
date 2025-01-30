@@ -34,12 +34,12 @@ def test_orf_search():
                     False,      #partial5
                     False,      #between_stops
                     True,       #nested
-                    [False,False,False,False,False]  #out_opts     
+                    [False,False,True,False,False]  #out_opts     
     )
     
     print(result)
-    print(result[0])
-    print(len(result[0].split('\n')))
-    assert len(result[0].split('\n'))==5
+    print(result[2])
+    print(len(result[2].split('\n')))
+    assert len(result[2].split('\n'))==10
     
 test_orf_search()
